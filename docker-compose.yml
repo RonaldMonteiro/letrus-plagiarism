@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: letrus:latest
+    environment:
+      APP_MODE: api
+      HOST: 0.0.0.0
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    # volumes:  # descomente para desenvolvimento com hot-reload (se adicionar uvicorn --reload)
+    #   - ./:/app
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: letrus:latest
+    environment:
+      APP_MODE: ui
+    depends_on:
+      - api
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+    # volumes:
+    #   - ./:/app
+
+# Redes e volumes extras podem ser definidos aqui se necessário
+# networks: {}
+# volumes: {}

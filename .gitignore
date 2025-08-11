@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.cache/
+model/
+.vector_cache/
+.tox/
+.pytest_cache/
+.coverage
+htmlcov/
+**/.DS_Store
+meta
