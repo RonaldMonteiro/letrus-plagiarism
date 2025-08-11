@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from api.models.corpus import CorpusIndex
+from models.corpus import CorpusIndex
 from utils.config import LEXICAL_CHAR_WEIGHT
 from utils.encoder import SemanticEncoder
 from sklearn.feature_extraction.text import TfidfVectorizer

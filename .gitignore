@@ -10,4 +10,6 @@ model/
 .coverage
 htmlcov/
 **/.DS_Store
-meta
+.data
+api/letrus_plagiarism.egg-info
+ui/letrus_ui.egg-info

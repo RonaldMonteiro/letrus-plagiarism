@@ -6,7 +6,7 @@ import pandas as pd
 from typing           import List
 from datasets         import load_dataset
 from typing           import List
-from api.models.document import Document
+from models.document import Document
 from utils.config   import DATASET_LANG, DATASET_SIZE, WIKIPEDIA_DATES
 
 logger = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ from typing import List
 import re
 
 from sklearn.metrics.pairwise import cosine_similarity
-from .models.corpus import CorpusIndex
+from models.corpus import CorpusIndex
 
 logger = logging.getLogger(__name__)
 

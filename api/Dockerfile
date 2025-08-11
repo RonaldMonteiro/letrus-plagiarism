@@ -1,32 +1,45 @@
-# syntax=docker/dockerfile:1
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    HF_HOME=/root/.cache/huggingface
+    HF_HOME=/cache/huggingface
 
-# System deps
+# copy uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential git curl ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g $GID api && useradd -u $UID -g api -m -s /bin/bash api
+
+USER api
 WORKDIR /app
 
-# Copy project metadata first (leverage Docker layer cache)
-COPY pyproject.toml README.md /app/
+# copy project metadata first (leverage Docker layer cache)
+COPY api/pyproject.toml .
 
-# Install runtime deps
-RUN pip install --upgrade pip && pip install . && pip install plotly pandas
+# Create virtual environment in .venv
+RUN uv venv .venv
 
-# Copy source
-COPY app /app/app
+# Add .venv/bin to PATH
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Variável para escolher processo (api | ui)
-ENV APP_MODE=api
+# install runtime deps
+RUN uv sync
 
-EXPOSE 8000 8501
+# copy source
+COPY api ./api
 
-# Entry-point flexível
-# CMD ["bash", "-c", "if [ \"$APP_MODE\" = \"ui\" ]; then streamlit run streamlit_app.py --server.port=8501 --server.address=0.0.0.0; else uvicorn app.main:app --host 0.0.0.0 --port 8000; fi"]
-CMD [""]
+ARG HOST
+ARG PORT
+ENV HOST=${HOST:-0.0.0.0}
+ENV PORT=${PORT:-8000}
+
+EXPOSE $PORT
+
+CMD ["uvicorn", "api.main:app", "--host", "$HOST", "--port", "$PORT"]

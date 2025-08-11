@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/github/actions/workflow/status/OWNER/REPO/ci.yml?label=CI&logo=github" />
 </p>
 
-<h1 align="center">Letrus – Comparação de Textos (Plágio / Paráfrase)</h1>
+<h1 align="center">Letrus – Detecção de plágio em pt-BR</h1>
 
 <p align="center">
 Solução simples para comparar um texto de aluno contra um pequeno corpus de artigos da Wikipedia (PT-BR) usando abordagens léxica (TF‑IDF + cosseno) e semântica (embeddings <code>sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2</code>).
@@ -15,18 +15,15 @@ Solução simples para comparar um texto de aluno contra um pequeno corpus de ar
 ---
 
 ## 🔖 Sumário
-- [Visão Geral](#-visão-geral)
+- [Visão geral](#-visão-geral)
 - [Funcionalidades](#-funcionalidades)
-- [Stack e Modelos](#-stack-e-modelos)
-- [Instalação Rápida](#-instalação-rápida)
-- [Uso da API](#-uso-da-api)
-- [Docker](#-docker)
-- [Pipeline CI](#-pipeline-ci)
 - [Estrutura de Pastas](#-estrutura-de-pastas)
-- [Notas & Dicas](#-notas--dicas)
-- [Próximas Ideias](#-próximas-ideias)
+- [Stacks](#-stacks)
+- [Primeiros passos](#-primeiro-passos)
+- [Uso da API](#-uso-da-api)
+- [Pipeline CI](#-pipeline-ci)
 
-## 🧭 Visão Geral
+## 🧭 Visão geral
 > Foco: protótipo leve para detecção inicial de similaridade / potencial plágio via comparação com ~200 artigos públicos PT-BR.
 
 A comparação retorna TOP-K documentos similares em duas dimensões:
@@ -36,11 +33,8 @@ A comparação retorna TOP-K documentos similares em duas dimensões:
 ## ✅ Funcionalidades
 - `GET /health` – status
 - `POST /compare` – recebe `{ text, top_k }`
-- `POST /reload` – reconstrói índice (após alterar variáveis de dataset)
-- Carregamento automático do subset Wikipedia (Hugging Face `datasets`)
-- Cache local em diretório padrão Hugging Face (`~/.cache/huggingface`)
 
-## 🧱 Stack e Modelos
+## 🧱 Stacks
 | Componente | Tecnologia |
 |------------|------------|
 | API | FastAPI + Uvicorn |
@@ -49,22 +43,58 @@ A comparação retorna TOP-K documentos similares em duas dimensões:
 | Dataset | `wikipedia` (subset PT-BR, tamanho configurável) |
 | Testes | pytest |
 | Infra (container) | Docker |
+| Interface | Streamlit |
 
-## ⚙️ Instalação Rápida
+## 🗂️ Estrutura de pastas
+```text
+api/
+  data.py           # Carrega dataset + cache
+  main.py           # Entrypoint FastAPI
+  match.py          # Lógica de comparação (similaridade)
+  split.py          # Utilitários de divisão de dados/texto
+  models/           # Schemas Pydantic
+  tests/            # Testes unitários (pytest)
+  utils/            # Funções auxiliares
+  Dockerfile        # Container API
+  pyproject.toml    # Dependências PPI
 
-```powershell
-python -m venv .venv; .\.venv\Scripts\Activate.ps1
-pip install -U pip
-pip install -e .[dev]
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+ui/
+  app.py            # Interface Streamlit
+  Dockerfile        # Container UI
+  pyproject.toml    # Dependências UI
+Dockerfile          # Container API
+docker-compose.yml  # Orquestração dos serviços
+LICENSE
+pytest.ini
+README.md
 ```
 
-### Variáveis de Ambiente Principais
-| Nome | Descrição | Exemplo |
-|------|-----------|---------|
-| DATASET_LANG | Código de língua | pt |
-| DATASET_SIZE | Quantidade de artigos | 200 |
-| WIKIPEDIA_DATES | (Opcional) Filtro de datas | 20231101 |
+## ⚙️ Primeiros passos
+A forma mais prática de iniciar os serviços é rodando o comando abaixo na raiz do projeto, utilizando o docker compose:
+
+```bash
+docker compose up -d
+```
+
+Durante o desenvolvimento, você pode iniciar cada aplicação separadamente utilizando o gerenciador de pacotes uv:
+
+##### API
+```powershell
+cd api
+pip install uv
+uv sync
+source .venv/bin/activate
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+##### UI
+```powershell
+cd ui
+pip install uv
+uv sync
+source .venv/bin/activate
+streamlit run app.py --server.port=8501 --server.address=0.0.0.0
+```
 
 ## 🛰️ Uso da API
 
@@ -81,80 +111,9 @@ curl -X POST http://localhost:8000/compare -H "Content-Type: application/json" -
 }"
 ```
 
-### Recarregar Índice
-```powershell
-curl -X POST http://localhost:8000/reload
-```
-
-<details>
-<summary><strong>Exemplo de Resposta (parcial)</strong></summary>
-
-```json
-{
-  "lexical": [
-    {"doc_id": 42, "score": 0.612, "title": "Revolução Industrial"},
-    {"doc_id": 7,  "score": 0.401, "title": "Inglaterra"}
-  ],
-  "semantic": [
-    {"doc_id": 42, "score": 0.812, "title": "Revolução Industrial"},
-    {"doc_id": 15, "score": 0.676, "title": "Máquinas a vapor"}
-  ]
-}
-```
-</details>
-
-## 🐳 Docker
-
-### Build
-```powershell
-docker build -t letrus-plagiarism:latest .
-```
-
-### Run
-```powershell
-docker run --rm -p 8000:8000 letrus-plagiarism:latest
-```
-
-### Cache de Modelos
-> Recomendado fazer um primeiro build conectado à internet. Camada de cache reaproveitada em builds subsequentes.
 
 ## 🔁 Pipeline CI
 - Executa testes (pytest)
 - Build da imagem Docker
-- (Opcional futuro) push para registry
 
 Consultar `.github/workflows/ci.yml`.
-
-## 🗂️ Estrutura de Pastas
-```text
-app/
-  main.py          # Entrypoint FastAPI
-  data.py          # Carrega dataset + cache
-  compare.py       # Lógica de similaridade
-  models.py        # Pydantic schemas
-tests/
-  test_compare.py
-  test_api.py
-```
-
-## 💡 Notas & Dicas
-> Primeira execução baixa modelo e dataset (pode levar alguns minutos).
-
-- Rodar uma vez online e depois reutilizar cache offline.
-- Ajustar `top_k` conforme necessidade (default implementado no modelo de request).
-- Monitorar memória se `DATASET_SIZE` crescer.
-
-## 🚀 Próximas Ideias
-- Paginação / streaming de resultados
-- Normalização de pontuação conjunta (score híbrido)
-- Métricas de benchmarking (MAP / nDCG)
-- Suporte a outros modelos (e.g. bge-m3, e5-multilingual)
-- Persistência incremental do índice
-
-## 🧭 Arquitetura
-Detalhes em: [ARCHITECTURE.md](./ARCHITECTURE.md)
-
----
-
-<p align="center">
-Feito para experimentação educacional e detecção preliminar. Não substitui revisão

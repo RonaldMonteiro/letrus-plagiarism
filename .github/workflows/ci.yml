@@ -5,28 +5,39 @@ on:
   pull_request:
 
 jobs:
-  test-and-build:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
+      - name: Install uv and dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install uv
+          cd api
+          uv sync
 
       - name: Run tests
-        env:
-          USE_SAMPLE_DATA: "1"  # Keep CI fast and deterministic
-        run: |
-          pytest -q
+        run: pytest
 
-      - name: Build Docker image
+  build-api:
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build API Docker image
         run: |
-          docker build -t letrus-plagiarism:ci .
+          docker build -f api/Dockerfile -t letrus-api:ci .
+
+  build-ui:
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build UI Docker image
+        run: |
+          docker build -f ui/Dockerfile -t letrus-ui:ci .

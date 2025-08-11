@@ -1,6 +1,6 @@
 import pytest
 
-from api.match import topk_lexical, topk_semantic, build_index
+from match import topk_lexical, topk_semantic, build_index
 
 
 def _toy_index():

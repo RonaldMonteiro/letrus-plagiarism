@@ -6,11 +6,11 @@ from typing import List
 
 from fastapi import FastAPI, HTTPException
 
-from api.match import CorpusIndex, build_index, topk_lexical, topk_semantic
-from api.split import sentence_alignment
-from api.data import load_wikipedia_docs
-from api.models.response import CompareMethodResult, CompareResponse, DocSentences, SentencePair
-from api.models.request import CompareRequest
+from match import CorpusIndex, build_index, topk_lexical, topk_semantic
+from split import sentence_alignment
+from data import load_wikipedia_docs
+from models.response import CompareMethodResult, CompareResponse, DocSentences, SentencePair
+from models.request import CompareRequest
 from utils.config import TOP_K_MAX
 
 logger = logging.getLogger(__name__)
@@ -18,21 +18,30 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Letrus - Detector de plágio")
 
+CACHE_LOADED = False
 
 @lru_cache(maxsize=1)
 def get_index() -> CorpusIndex:
+    global CACHE_LOADED
     docs = load_wikipedia_docs()
     ids = [d.id for d in docs]
     titles = [d.title for d in docs]
     texts = [d.text for d in docs]
     logger.info("Building corpus index: %d docs", len(docs))
-    return build_index(ids, titles, texts)
+    index = build_index(ids, titles, texts)
+    CACHE_LOADED = True
+    return index
+
+
+@app.on_event("startup") 
+async def preload():
+    logger.info("Preloading corpus index...")
+    get_index()
 
 
 @app.get("/health")
 async def health():
-    idx = get_index()
-    return {"status": "ok", "corpus_size": len(idx.ids)}
+    return { "status": "ok", "cache_loaded": CACHE_LOADED }
 
 
 @app.post("/compare", response_model=CompareResponse)
@@ -47,8 +56,6 @@ async def compare(payload: CompareRequest) -> CompareResponse:
     sem_docs = topk_semantic(idx, payload.text, k)
 
     def build_doc_groups(doc_ids: List[int]) -> List[DocSentences]:
-        if not payload.detail:
-            return []
         groups: List[DocSentences] = []
         for doc_id in doc_ids:
             pos = idx.ids.index(doc_id)

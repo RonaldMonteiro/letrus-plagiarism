@@ -1,36 +1,33 @@
-version: "3.9"
-
 services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: letrus:latest
-    environment:
-      APP_MODE: api
-      HOST: 0.0.0.0
-      PORT: 8000
+      dockerfile: api/Dockerfile
+      args:
+        HOST: 0.0.0.0
+        PORT: 8000
     ports:
       - "8000:8000"
     restart: unless-stopped
-    # volumes:  # descomente para desenvolvimento com hot-reload (se adicionar uvicorn --reload)
-    #   - ./:/app
-
+    volumes:
+      - .data/pytest_cache:/app/.data/pytest_cache
+      - .data/huggingface:/cache/huggingface
+    environment:
+      - DATASET_LANG=pt
+      - DATASET_SIZE=200
+      - WIKIPEDIA_DATES=20231101
+      - MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+      - TOP_K_MAX=20
+      - LEXICAL_CHAR_WEIGHT=0.4
+      - HF_HUB_DISABLE_SYMLINKS_WARNING=1
   ui:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: letrus:latest
-    environment:
-      APP_MODE: ui
+      dockerfile: ui/Dockerfile
     depends_on:
       - api
     ports:
       - "8501:8501"
     restart: unless-stopped
-    # volumes:
-    #   - ./:/app
-
-# Redes e volumes extras podem ser definidos aqui se necessário
-# networks: {}
-# volumes: {}
+    environment:
+      - API_BASE=http://api:8000
