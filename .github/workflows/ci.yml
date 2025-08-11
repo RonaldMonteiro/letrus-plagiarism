@@ -16,9 +16,14 @@ jobs:
           pip install uv
           cd api
           uv sync
+          source .venv/bin/activate
+          uv pip install pytest
 
       - name: Run tests
-        run: pytest
+        run: |
+          cd api
+          source .venv/bin/activate
+          pytest
 
   build-api:
     runs-on: ubuntu-latest

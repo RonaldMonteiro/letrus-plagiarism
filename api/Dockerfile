@@ -42,4 +42,5 @@ ENV PORT=${PORT:-8000}
 
 EXPOSE $PORT
 
-CMD ["uvicorn", "api.main:app", "--host", "$HOST", "--port", "$PORT"]
+WORKDIR /app/api
+CMD uvicorn main:app --host "${HOST}" --port "${PORT}"
