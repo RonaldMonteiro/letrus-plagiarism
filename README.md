@@ -3,7 +3,6 @@
   <img src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/FastAPI-0.10+-009688?logo=fastapi" />
   <img src="https://img.shields.io/badge/License-MIT-green" />
-  <img src="https://img.shields.io/github/actions/workflow/status/OWNER/REPO/ci.yml?label=CI&logo=github" />
 </p>
 
 <h1 align="center">Letrus – Detecção de plágio em pt-BR</h1>
